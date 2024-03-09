@@ -5,11 +5,16 @@ using SeleniumExtras.WaitHelpers;
 
 namespace MS.CodeChecker.Models;
 
+public enum CodeStatus {
+    Used
+}
+
 public class Driver
 {
     private const string TargetLink = "https://account.microsoft.com/billing/redeem?refd=account.microsoft.com";
     private const string InputId = "tokenString";
     private const string CodeErrorClassname = "redeem_code_error";
+    private const string NextButtonId = "nextButton";
 
     private readonly ChromeDriver _driver;
     private readonly WebDriverWait _driverWait;
@@ -45,6 +50,8 @@ public class Driver
         {
             return false;
         }
+        
+        Thread.Sleep(1000);
 
         return true;
     }
@@ -56,7 +63,7 @@ public class Driver
 
         try
         {
-            new WebDriverWait(_driver, TimeSpan.FromSeconds(10))
+            new WebDriverWait(_driver, TimeSpan.FromSeconds(6))
                 .Until(ExpectedConditions.ElementExists(By.ClassName(CodeErrorClassname)));
         }
         catch
@@ -72,16 +79,20 @@ public class Driver
         if (!IsLogged()) return false;
 
         IWebElement codeInput = _driver.FindElement(By.Id(InputId));
+        List<string> codes = FileManager.GetCodes();
 
-        foreach (string code in FileManager.GetCodes())
+        foreach (string code in codes)
         {
-            if (IsCodeValid(codeInput, code))
-                FileManager.WriteValidCode(code);
+            FileManager.WriteValidCode(
+                code,
+                IsCodeValid(codeInput, code) ? null : CodeStatus.Used
+                );
             
-            Thread.Sleep(3000);
+            Thread.Sleep(2000);
         }
         
         _driver.Close();
+        
         return true;
     }
 }

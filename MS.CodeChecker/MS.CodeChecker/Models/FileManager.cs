@@ -41,14 +41,19 @@ public static class FileManager
         return codes;
     }
 
-    public static void WriteValidCode(string code)
+    public static void WriteValidCode(string code, CodeStatus? status)
     {
-        if (ReadFile(ValidCodesFilename).Contains(code))
-            return;
+        foreach (string element in ReadFile(ValidCodesFilename))
+        {
+            if (element.Split(" ").Contains(code))
+                return;
+        }
 
         StreamWriter streamWriter = new StreamWriter(ValidCodesFilename, true);
+
+        string codeStatus = status != null ? " - " + status : "";
         
-        streamWriter.WriteLine(code);
+        streamWriter.WriteLine($"{code}{codeStatus}");
         streamWriter.Close();
     }
 }

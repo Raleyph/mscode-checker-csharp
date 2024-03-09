@@ -1,4 +1,5 @@
 ﻿using MS.CodeChecker.Models;
+using OpenQA.Selenium;
 
 namespace MS.CodeChecker;
 
@@ -13,16 +14,25 @@ public static class Program
         catch (Exception e) when (e is ArgumentException or FileNotFoundException)
         {
             Console.WriteLine(e.Message);
-            Console.ReadKey();
+            Console.ReadLine();
         }
 
-        bool result = new Driver().Start();
+        try
+        {
+            bool result = new Driver().Start();
+
+            Console.WriteLine(
+                result
+                    ? "Програма успешно завершила работу"
+                    : "Программа звершила работу с ошибкой авторизации! Скорее всего, " +
+                      "превышено время ожидания. Попробуйте запустить проверку заново."
+            );
+        }
+        catch (Exception error) when (error is NullReferenceException or NoSuchWindowException)
+        {
+            Environment.Exit(-1);
+        }
         
-        Console.WriteLine(
-            result ?
-                "Програма успешно завершила работу" :
-                "Программа звершила работу с ошибкой авторизации! Скорее всего, " +
-                "превышено время ожидания. Попробуйте запустить проверку заново."
-        );
+        Console.ReadLine();
     }
 }
