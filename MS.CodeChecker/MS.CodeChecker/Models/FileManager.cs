@@ -16,7 +16,7 @@ public static class FileManager
         if (!File.Exists(ValidCodesFilename))
             File.Create(ValidCodesFilename);
 
-        GetCodes();
+        GetSourceCodes();
     }
     
     private static List<string> ReadFile(string file)
@@ -28,10 +28,11 @@ public static class FileManager
             fileData.Add(line.Replace("\n", ""));
         
         fileStream.Close();
+        
         return fileData;
     }
     
-    public static List<string> GetCodes()
+    public static List<string> GetSourceCodes()
     {
         List<string> codes = ReadFile(CodesFilename);
 
@@ -41,14 +42,11 @@ public static class FileManager
         return codes;
     }
 
+    public static IEnumerable<string> GetProcessedCodes()
+        => ReadFile(ValidCodesFilename).Select(codeDump => codeDump.Split(" ")[0]).ToList();
+
     public static void WriteValidCode(string code, CodeStatus? status)
     {
-        foreach (string element in ReadFile(ValidCodesFilename))
-        {
-            if (element.Split(" ").Contains(code))
-                return;
-        }
-
         StreamWriter streamWriter = new StreamWriter(ValidCodesFilename, true);
 
         string codeStatus = status != null ? " - " + status : "";

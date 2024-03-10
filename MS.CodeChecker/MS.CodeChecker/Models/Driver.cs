@@ -14,7 +14,6 @@ public class Driver
     private const string TargetLink = "https://account.microsoft.com/billing/redeem?refd=account.microsoft.com";
     private const string InputId = "tokenString";
     private const string CodeErrorClassname = "redeem_code_error";
-    private const string NextButtonId = "nextButton";
 
     private readonly ChromeDriver _driver;
     private readonly WebDriverWait _driverWait;
@@ -28,17 +27,17 @@ public class Driver
 
         _driver = new ChromeDriver(options: options, chromeDriverDirectory: "driver/chromedriver.exe");
         
-        _driverWait = new WebDriverWait(_driver, TimeSpan.FromSeconds(60));
+        _driverWait = new WebDriverWait(_driver, TimeSpan.FromSeconds(120));
         _driver.Navigate().GoToUrl(TargetLink);
     }
 
-    private bool IsLogged()
+    private void Login()
     {
-        while (_driver.Url != TargetLink) { }
+        while (!_driver.Url.Contains(TargetLink)) { }
 
         IWebElement frame = _driverWait.Until(ExpectedConditions.ElementExists(By.TagName("iframe")));
 
-        if (frame == null) return false;
+        if (frame == null) throw new NoSuchFrameException("ОШИБКА! Iframe не был найден.");
 
         _driver.SwitchTo().Frame(frame);
 
@@ -48,12 +47,10 @@ public class Driver
         }
         catch
         {
-            return false;
+            throw new NoSuchElementException("ОШИБКА! Поле для ввода ключей не было найдено.");
         }
         
-        Thread.Sleep(1000);
-
-        return true;
+        Thread.Sleep(2000);
     }
 
     private bool IsCodeValid(IWebElement codeInput, string code)
@@ -63,7 +60,7 @@ public class Driver
 
         try
         {
-            new WebDriverWait(_driver, TimeSpan.FromSeconds(6))
+            new WebDriverWait(_driver, TimeSpan.FromSeconds(10))
                 .Until(ExpectedConditions.ElementExists(By.ClassName(CodeErrorClassname)));
         }
         catch
@@ -74,13 +71,15 @@ public class Driver
         return false;
     }
 
-    public bool Start()
+    public void Start()
     {
-        if (!IsLogged()) return false;
+        Login();
 
         IWebElement codeInput = _driver.FindElement(By.Id(InputId));
-        List<string> codes = FileManager.GetCodes();
-
+        
+        List<string> sourceCodes = FileManager.GetSourceCodes();
+        IEnumerable<string> codes = sourceCodes.Except(FileManager.GetProcessedCodes());
+        
         foreach (string code in codes)
         {
             FileManager.WriteValidCode(
@@ -88,11 +87,9 @@ public class Driver
                 IsCodeValid(codeInput, code) ? null : CodeStatus.Used
                 );
             
-            Thread.Sleep(2000);
+            Thread.Sleep(6000);
         }
         
         _driver.Close();
-        
-        return true;
     }
 }

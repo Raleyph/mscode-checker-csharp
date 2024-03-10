@@ -19,16 +19,12 @@ public static class Program
 
         try
         {
-            bool result = new Driver().Start();
-
-            Console.WriteLine(
-                result
-                    ? "Програма успешно завершила работу"
-                    : "Программа звершила работу с ошибкой авторизации! Скорее всего, " +
-                      "превышено время ожидания. Попробуйте запустить проверку заново."
-            );
+            new Driver().Start();
+            Console.WriteLine("Програма успешно завершила работу");
         }
-        catch (Exception error) when (error is NullReferenceException or NoSuchWindowException)
+        catch (Exception error) when (
+            error is NullReferenceException or NoSuchWindowException or NoSuchFrameException or NoSuchElementException
+            )
         {
             Environment.Exit(-1);
         }
