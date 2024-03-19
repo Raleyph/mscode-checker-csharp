@@ -12,8 +12,8 @@ public enum CodeStatus {
 public class Driver
 {
     private const string TargetLink = "https://account.microsoft.com/billing/redeem?refd=account.microsoft.com";
-    private const string InputId = "tokenString";
-    private const string CodeErrorClassname = "redeem_code_error";
+    private const string InputId = "input--GaqSk7Tl";
+    private const string CodeErrorClassname = "errorMessageText--0VFASJvm";
 
     private readonly ChromeDriver _driver;
     private readonly WebDriverWait _driverWait;
