@@ -16,16 +16,23 @@ public static class Program
             Console.WriteLine(e.Message);
             Console.ReadLine();
         }
-
+        
+        new Driver().Start();
+        Console.WriteLine("Програма успешно завершила работу");
+        
         try
         {
             new Driver().Start();
             Console.WriteLine("Програма успешно завершила работу");
         }
         catch (Exception error) when (
-            error is NullReferenceException or NoSuchWindowException or NoSuchFrameException or NoSuchElementException
+            error is NullReferenceException
+                or NoSuchWindowException
+                or NoSuchFrameException
+                or NoSuchElementException
             )
         {
+            Console.WriteLine(error);
             Environment.Exit(-1);
         }
         

@@ -12,7 +12,8 @@ public enum CodeStatus {
 public class Driver
 {
     private const string TargetLink = "https://account.microsoft.com/billing/redeem?refd=account.microsoft.com";
-    private const string InputId = "input--GaqSk7Tl";
+    private const string IframeId = "redeem-iframe";
+    private const string InputSelector = "#store-cart-root > div > div > div > div.content--3nYMiOWt > input";
     private const string CodeErrorClassname = "errorMessageText--0VFASJvm";
 
     private readonly ChromeDriver _driver;
@@ -35,7 +36,7 @@ public class Driver
     {
         while (!_driver.Url.Contains(TargetLink)) { }
 
-        IWebElement frame = _driverWait.Until(ExpectedConditions.ElementExists(By.TagName("iframe")));
+        IWebElement frame = _driverWait.Until(ExpectedConditions.ElementExists(By.Id(IframeId)));
 
         if (frame == null) throw new NoSuchFrameException("ОШИБКА! Iframe не был найден.");
 
@@ -43,7 +44,7 @@ public class Driver
 
         try
         {
-            _driverWait.Until(ExpectedConditions.ElementExists(By.Id(InputId)));
+            _driverWait.Until(ExpectedConditions.ElementExists(By.CssSelector(InputSelector)));
         }
         catch
         {
@@ -75,7 +76,7 @@ public class Driver
     {
         Login();
 
-        IWebElement codeInput = _driver.FindElement(By.Id(InputId));
+        IWebElement codeInput = _driver.FindElement(By.CssSelector(InputSelector));
         
         List<string> sourceCodes = FileManager.GetSourceCodes();
         IEnumerable<string> codes = sourceCodes.Except(FileManager.GetProcessedCodes());
