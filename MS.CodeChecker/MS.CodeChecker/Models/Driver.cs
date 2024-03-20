@@ -2,6 +2,7 @@
 using OpenQA.Selenium.Chrome;
 using OpenQA.Selenium.Support.UI;
 using SeleniumExtras.WaitHelpers;
+using RandomUserAgent;
 
 namespace MS.CodeChecker.Models;
 
@@ -25,6 +26,7 @@ public class Driver
         
         options.AddArgument("--disable-blink-features=AutomationControlled");
         options.AddArgument("--start-maximized");
+        options.AddArgument($"--user-agent={RandomUa.RandomUserAgent}");
 
         _driver = new ChromeDriver(options: options, chromeDriverDirectory: "driver/chromedriver.exe");
         
@@ -88,7 +90,7 @@ public class Driver
                 IsCodeValid(codeInput, code) ? null : CodeStatus.Used
                 );
             
-            Thread.Sleep(6000);
+            Thread.Sleep(8000);
         }
         
         _driver.Close();
