@@ -17,9 +17,6 @@ public static class Program
             Console.ReadLine();
         }
         
-        new Driver().Start();
-        Console.WriteLine("Програма успешно завершила работу");
-        
         try
         {
             new Driver().Start();
