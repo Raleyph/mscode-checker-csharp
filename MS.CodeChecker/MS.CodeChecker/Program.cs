@@ -54,6 +54,11 @@ public static class Program
                     Thread.Sleep(90000);
                     break;
                 }
+                catch (ElementNotInteractableException)
+                {
+                    driver.Close();
+                    break;
+                }
 
                 if (codes.IndexOf(code) != codes.Count - 1)
                     continue;
