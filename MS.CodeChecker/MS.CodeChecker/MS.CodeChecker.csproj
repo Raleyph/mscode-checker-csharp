@@ -14,4 +14,12 @@
       <PackageReference Include="SeleniumExtras.WaitHelpers" Version="1.0.2" />
     </ItemGroup>
 
+    <ItemGroup>
+      <Content Include="bin\Release\net7.0\cookies.json" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="bin\Release\net7.0\" />
+    </ItemGroup>
+
 </Project>

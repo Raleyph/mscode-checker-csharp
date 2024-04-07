@@ -1,24 +1,31 @@
-﻿using OpenQA.Selenium;
+﻿using System.Collections.ObjectModel;
+using OpenQA.Selenium;
 using OpenQA.Selenium.Chrome;
 using OpenQA.Selenium.Support.UI;
 using SeleniumExtras.WaitHelpers;
-using RandomUserAgent;
 
 namespace MS.CodeChecker.Models;
 
-public enum CodeStatus {
-    Used
-}
+public enum CodeStatus { Used }
 
 public class Driver
 {
     private const string TargetLink = "https://account.microsoft.com/billing/redeem?refd=account.microsoft.com";
+
+    private readonly string[] _credentialsInputSelectors = { "#i0116", "#i0118" };
+    private const string CredentialsAcceptSelector = "#idSIButton9";
+    private const string StayLoggedSelector = "#acceptButton";
+    
     private const string IframeId = "redeem-iframe";
-    private const string InputSelector = "#store-cart-root > div > div > div > div.content--3nYMiOWt > input";
+    private const string CodeInputSelector = "#store-cart-root > div > div > div > div.content--3nYMiOWt > input";
     private const string CodeErrorClassname = "errorMessageText--0VFASJvm";
 
     private readonly ChromeDriver _driver;
-    private readonly WebDriverWait _driverWait;
+    
+    private readonly WebDriverWait _redirectDriverWait;
+    private readonly WebDriverWait _elementDriverWait;
+
+    private IWebElement? _codeInput;
 
     public Driver()
     {
@@ -26,73 +33,88 @@ public class Driver
         
         options.AddArgument("--disable-blink-features=AutomationControlled");
         options.AddArgument("--start-maximized");
-        options.AddArgument($"--user-agent={RandomUa.RandomUserAgent}");
 
         _driver = new ChromeDriver(options: options, chromeDriverDirectory: "driver/chromedriver.exe");
         
-        _driverWait = new WebDriverWait(_driver, TimeSpan.FromSeconds(120));
-        _driver.Navigate().GoToUrl(TargetLink);
+        _redirectDriverWait = new WebDriverWait(_driver, TimeSpan.FromSeconds(120));
+        _elementDriverWait = new WebDriverWait(_driver, TimeSpan.FromSeconds(10));
+
+        Init();
+    }
+
+    private IWebElement FindExistElement(By selector)
+        => _elementDriverWait.Until(ExpectedConditions.ElementExists(selector));
+    
+    private IWebElement FindInteractableElement(By selector)
+        => _elementDriverWait.Until(ExpectedConditions.ElementToBeClickable(selector));
+    
+    private void Init()
+    {
+        Login();
+        _codeInput = GetCodeInput();
     }
 
     private void Login()
     {
-        while (!_driver.Url.Contains(TargetLink)) { }
+        _driver.Navigate().GoToUrl(TargetLink);
 
-        IWebElement frame = _driverWait.Until(ExpectedConditions.ElementExists(By.Id(IframeId)));
+        string[] credentials = FileManager.GetCredentials();
 
-        if (frame == null) throw new NoSuchFrameException("ОШИБКА! Iframe не был найден.");
+        for (int i = 0; i < _credentialsInputSelectors.Length; i++)
+        {
+            FindInteractableElement(By.CssSelector(_credentialsInputSelectors[i])).SendKeys(credentials[i]);
+            FindInteractableElement(By.CssSelector(CredentialsAcceptSelector)).Click();
+        }
+        
+        FindInteractableElement(By.CssSelector(StayLoggedSelector)).Click();
+    }
+
+    private IWebElement GetCodeInput()
+    {
+        IWebElement frame = _redirectDriverWait.Until(ExpectedConditions.ElementExists(By.Id(IframeId)));
+
+        if (frame == null)
+            throw new NoSuchFrameException("ОШИБКА! Iframe не был найден.");
 
         _driver.SwitchTo().Frame(frame);
 
         try
         {
-            _driverWait.Until(ExpectedConditions.ElementExists(By.CssSelector(InputSelector)));
+            return FindExistElement(By.CssSelector(CodeInputSelector));
         }
         catch
         {
             throw new NoSuchElementException("ОШИБКА! Поле для ввода ключей не было найдено.");
         }
-        
-        Thread.Sleep(2000);
     }
 
-    private bool IsCodeValid(IWebElement codeInput, string code)
+    public bool IsCodeValid(string code)
     {
-        codeInput.Clear();
-        codeInput.SendKeys(code);
+        _codeInput?.Clear();
+        _codeInput?.SendKeys(code);
+
+        IWebElement errorElement;
 
         try
         {
-            new WebDriverWait(_driver, TimeSpan.FromSeconds(10))
-                .Until(ExpectedConditions.ElementExists(By.ClassName(CodeErrorClassname)));
+            errorElement = FindExistElement(By.ClassName(CodeErrorClassname));
         }
         catch
         {
             return true;
         }
+        
+        ReadOnlyCollection<IWebElement> errorSpan = errorElement.FindElements(By.XPath("*"));
 
+        string errorText = errorSpan[0].Text;
+
+        if (errorText.Contains("unexpected") || errorText.Contains("помилка"))
+            throw new MicrosoftUnexpectedCodeError();
+        
         return false;
     }
-
-    public void Start()
-    {
-        Login();
-
-        IWebElement codeInput = _driver.FindElement(By.CssSelector(InputSelector));
-        
-        List<string> sourceCodes = FileManager.GetSourceCodes();
-        IEnumerable<string> codes = sourceCodes.Except(FileManager.GetProcessedCodes());
-        
-        foreach (string code in codes)
-        {
-            FileManager.WriteValidCode(
-                code,
-                IsCodeValid(codeInput, code) ? null : CodeStatus.Used
-                );
-            
-            Thread.Sleep(8000);
-        }
-        
-        _driver.Close();
-    }
+    
+    public void Close() => _driver.Close();
 }
+
+public class MicrosoftUnexpectedCodeError : Exception { }

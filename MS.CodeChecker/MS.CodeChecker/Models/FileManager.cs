@@ -2,11 +2,18 @@
 
 public static class FileManager
 {
+    private const string CredentialsFilename = "credentials.txt";
     private const string CodesFilename = "codes.txt";
     private const string ValidCodesFilename = "valid.txt";
 
     public static void CheckEnvironment()
     {
+        if (!File.Exists(CredentialsFilename))
+        {
+            File.Create(CredentialsFilename);
+            throw new FileNotFoundException("Отсутствующий файл с учётными данными был создан. Для начала работы заполните его.");
+        }
+        
         if (!File.Exists(CodesFilename))
         {
             File.Create(CodesFilename);
@@ -31,6 +38,8 @@ public static class FileManager
         
         return fileData;
     }
+
+    public static string[] GetCredentials() => ReadFile(CredentialsFilename).ToArray();
     
     public static List<string> GetSourceCodes()
     {
